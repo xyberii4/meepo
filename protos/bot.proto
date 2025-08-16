@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+option go_package = "github.com/xyberii4/meepo/protos/bot";
+
+service BotService {
+  rpc JoinMeeting (JoinMeetingRequest) returns (stream JoinMeetingResponse);
+  rpc GetMeetingDetails (MeetingDetailsRequest) returns (MeetingDetailsResponse);
+  rpc LeaveMeeting (LeaveMeetingRequest) returns (LeaveMeetingResponse);
+}
+
+message JoinMeetingRequest {
+  string url = 1;
+  string name = 2;
+}
+
+message JoinMeetingResponse {
+  enum State {
+    RECEIVED = 0;
+    PENDING = 1;
+    JOINED = 2;
+    FAILED = 3;
+  }
+
+  State state = 1;
+
+  string message = 3;
+  string bot_id = 4;
+}
+
+message MeetingDetailsRequest {
+  string bot_id = 1;
+}
+
+message MeetingDetailsResponse {
+  repeated Participant participants = 1;
+}
+
+message Participant {
+  string name = 1;
+}
+
+message LeaveMeetingRequest {
+  string bot_id = 1;
+}
+
+message LeaveMeetingResponse {
+  enum State {
+    RECEIVED = 0;
+    DONE = 1;
+    FAILED = 2;
+  }
+
+  State state = 1;
+
+  string message = 2;
+}

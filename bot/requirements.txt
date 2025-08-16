@@ -1,0 +1,8 @@
+undetected-chromedriver
+setuptools
+livekit
+livekit-api
+numpy
+python-dotenv
+pyyaml
+grpcio
