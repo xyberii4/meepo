@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/xyberii4/meepo/protos/bot";
+option go_package = "github.com/xyberii4/meepo/gateway/internal/grpc/pb";
 
 service BotService {
   rpc JoinMeeting (JoinMeetingRequest) returns (stream JoinMeetingResponse);
@@ -23,8 +23,8 @@ message JoinMeetingResponse {
 
   State state = 1;
 
-  string message = 3;
-  string bot_id = 4;
+  string message = 2;
+  string bot_id = 3;
 }
 
 message MeetingDetailsRequest {
