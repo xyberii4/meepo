@@ -4,4 +4,4 @@ audio:
 
 bot:
   browser_executable : /usr/bin/chromium
-  driver_executable : /tmp/chromedriver
+  driver_executable : /usr/bin/chromedriver

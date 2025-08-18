@@ -71,11 +71,16 @@ class Bot:
         print(f"[{self.id}] Joining meeting {self.meeting_link} as {self.bot_name}...")
 
         try:
-            # disable microphone and camera
-            disable_dev_button = WebDriverWait(self.driver, 15).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, "button[jsname='IbE0S']"))
-            )
-            disable_dev_button.click()
+            try:
+                # disable microphone and camera
+                disable_dev_button = WebDriverWait(self.driver, 15).until(
+                    EC.element_to_be_clickable(
+                        (By.CSS_SELECTOR, "button[jsname='IbE0S']")
+                    )
+                )
+                disable_dev_button.click()
+            except TimeoutException:
+                pass
 
             time.sleep(0.5)
 
@@ -217,7 +222,10 @@ class Bot:
     def execute(self):
         # retrieves audio in real-time via Web Audio API
         try:
+            print(f"[{self.id}] Starting bot {self.bot_name}...")
             self.join_meeting()
+            print(f"[{self.id}] Bot {self.bot_name} has joined the meeting.")
+            print(f"[{self.id}] Starting audio capture script...")
             self._inject_audio_capture_script()
             self._start_audio_capture()
 

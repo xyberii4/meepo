@@ -9,8 +9,8 @@ from typing import Dict
 
 from concurrent import futures
 
-from pb import bot_pb2
-from pb import bot_pb2_grpc
+from .pb import bot_pb2
+from .pb import bot_pb2_grpc
 
 from bot.models import Session
 from bot.selenium_bot.google_meets import Bot
