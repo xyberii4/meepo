@@ -1,23 +1,21 @@
 import threading
 import asyncio
-import uuid
 import grpc
 from grpc import aio
 import queue
 
-from typing import Dict
-
+from typing import Dict, Any
 from concurrent import futures
+
+from bot.models import Session
 
 from .pb import bot_pb2
 from .pb import bot_pb2_grpc
 
-from bot.models import Session
 from bot.selenium_bot.google_meets import Bot
 from bot.livekit_streamer.lk_streamer import LiveKitStreamer
 
-# stores active bot sessions
-# TODO: persistant storage?
+
 _active_sessions: Dict[str, Session] = {}
 
 
@@ -27,9 +25,23 @@ class MeetingBotServicer(bot_pb2_grpc.BotServiceServicer):
         Implements the JoinMeeting RPC.
         Starts a new meeting bot session and streams status updates.
         """
+        meepo_id = request.meepo_id
+        bot_id = request.bot_id
         meeting_link = request.url
-        bot_id = str(uuid.uuid4())
         bot_name = request.name
+
+        if bot_id in _active_sessions:
+            print(
+                f"[{meepo_id} | {bot_id}] JoinMeeting request for already active bot."
+            )
+            context.set_code(grpc.StatusCode.ALREADY_EXISTS)
+            context.set_details(f"Bot session with ID {bot_id} is already active.")
+            yield bot_pb2.JoinMeetingResponse(
+                state=bot_pb2.JoinMeetingResponse.FAILED,
+                message=f"Bot {bot_id} is already active.",
+                bot_id=bot_id,
+            )
+            return
 
         audio_queue = queue.Queue()
         selenium_running = threading.Event()
@@ -40,14 +52,13 @@ class MeetingBotServicer(bot_pb2_grpc.BotServiceServicer):
         # send a RECEIVED response.
         yield bot_pb2.JoinMeetingResponse(
             state=bot_pb2.JoinMeetingResponse.RECEIVED,
-            message=f"Received request for bot with ID: {bot_id}",
+            message=f"Received request for meepo {meepo_id}, bot {bot_id}",
             bot_id=bot_id,
         )
 
         try:
-            print(f"[{bot_id}] Starting bot and LiveKit streamer...")
+            print(f"[{meepo_id} | {bot_id}] Starting bot and LiveKit streamer...")
 
-            # selenium bot and livekit streamer share uuid and name
             bot_instance = Bot(
                 bot_id,
                 bot_name,
@@ -71,7 +82,7 @@ class MeetingBotServicer(bot_pb2_grpc.BotServiceServicer):
             await asyncio.get_running_loop().run_in_executor(None, pending.wait)
             yield bot_pb2.JoinMeetingResponse(
                 state=bot_pb2.JoinMeetingResponse.PENDING,
-                message=f"Bot {bot_id} is pending.",
+                message=f"Bot {bot_id} (meepo {meepo_id}) is pending.",
                 bot_id=bot_id,
             )
 
@@ -79,20 +90,19 @@ class MeetingBotServicer(bot_pb2_grpc.BotServiceServicer):
             await asyncio.get_running_loop().run_in_executor(None, joined.wait)
             yield bot_pb2.JoinMeetingResponse(
                 state=bot_pb2.JoinMeetingResponse.JOINED,
-                message=f"Bot {bot_id} has joined the meeting.",
+                message=f"Bot {bot_id} (meepo {meepo_id}) has joined the meeting.",
                 bot_id=bot_id,
             )
 
-            # store session
-            _active_sessions[bot_id] = Session(
-                bot=bot_instance,
-                livekit_streamer=lks,
-                selenium_evt=selenium_running,
-                livekit_evt=livekit_running,
-            )
+            _active_sessions[bot_id] = {
+                "bot": bot_instance,
+                "livekit_streamer": lks,
+                "selenium_evt": selenium_running,
+                "livekit_evt": livekit_running,
+            }
 
         except Exception as e:
-            print(f"[{bot_id}] An error occurred: {e}")
+            print(f"[{meepo_id} | {bot_id}] An error occurred: {e}")
             livekit_running.clear()
             selenium_running.clear()
             yield bot_pb2.JoinMeetingResponse(
@@ -107,16 +117,24 @@ class MeetingBotServicer(bot_pb2_grpc.BotServiceServicer):
         Returns details about the current meeting, such as participants.
         """
         bot_id = request.bot_id
+        meepo_id = request.meepo_id
+
+        print(f"[{meepo_id} | {bot_id}] Received GetMeetingDetails request.")
 
         bot_session = _active_sessions.get(bot_id, None)
 
         if bot_session is None:
             context.set_code(grpc.StatusCode.NOT_FOUND)
-            context.set_details(f"Bot session with ID {bot_id} not found.")
+            context.set_details(
+                f"Bot session with ID {bot_id} (for meepo {meepo_id}) not found."
+            )
             return bot_pb2.MeetingDetailsResponse()
 
-        bot_instance = bot_session.get("bot", None)
-        participants = bot_instance.get_participants()
+        bot_instance = bot_session.get("bot")
+        if bot_instance:
+            participants = bot_instance.get_participants()
+        else:
+            participants = []
 
         return bot_pb2.MeetingDetailsResponse(
             participants=[
@@ -129,25 +147,39 @@ class MeetingBotServicer(bot_pb2_grpc.BotServiceServicer):
 
     async def LeaveMeeting(self, request, context):
         bot_id = request.bot_id
+        meepo_id = request.meepo_id
+
+        print(f"[{meepo_id} | {bot_id}] Received LeaveMeeting request.")
+
         bot_session = _active_sessions.get(bot_id, None)
 
         if bot_session is None:
             return bot_pb2.LeaveMeetingResponse(
                 state=bot_pb2.LeaveMeetingResponse.FAILED,
-                message=f"Bot session with ID {bot_id} not found.",
+                message=f"Bot session with ID {bot_id} (for meepo {meepo_id}) not found.",
             )
 
-        selenium_evt = bot_session["selenium_evt"]
-        livekit_evt = bot_session["livekit_evt"]
+        selenium_evt = bot_session.get("selenium_evt")
+        livekit_evt = bot_session.get("livekit_evt")
 
         try:
-            selenium_evt.clear()
-            livekit_evt.clear()
+            if selenium_evt:
+                selenium_evt.clear()
+            if livekit_evt:
+                livekit_evt.clear()
+
+            if bot_id in _active_sessions:
+                del _active_sessions[bot_id]
+                print(f"[{meepo_id} | {bot_id}] Session cleaned up.")
+
             return bot_pb2.LeaveMeetingResponse(
                 state=bot_pb2.LeaveMeetingResponse.DONE,
+                message=f"Bot {bot_id} successfully left.",
             )
         except Exception as e:
-            print(f"[{bot_id}] An error occurred while leaving the meeting: {e}")
+            print(
+                f"[{meepo_id} | {bot_id}] An error occurred while leaving the meeting: {e}"
+            )
             return bot_pb2.LeaveMeetingResponse(
                 state=bot_pb2.LeaveMeetingResponse.FAILED,
                 message=f"An error occurred while leaving the meeting: {e}",
@@ -158,7 +190,6 @@ async def serve():
     """
     Main function to start the gRPC server.
     """
-    # server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     server = aio.server(futures.ThreadPoolExecutor(max_workers=10))
     bot_pb2_grpc.add_BotServiceServicer_to_server(MeetingBotServicer(), server)
     server.add_insecure_port("[::]:50051")

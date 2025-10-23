@@ -9,8 +9,10 @@ service BotService {
 }
 
 message JoinMeetingRequest {
-  string url = 1;
-  string name = 2;
+  string meepo_id = 1;
+  string bot_id = 2;
+  string url = 3;
+  string name = 4;
 }
 
 message JoinMeetingResponse {
@@ -29,6 +31,7 @@ message JoinMeetingResponse {
 
 message MeetingDetailsRequest {
   string bot_id = 1;
+  string meepo_id = 2;
 }
 
 message MeetingDetailsResponse {
@@ -41,6 +44,7 @@ message Participant {
 
 message LeaveMeetingRequest {
   string bot_id = 1;
+  string meepo_id = 2;
 }
 
 message LeaveMeetingResponse {

@@ -7,13 +7,17 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class JoinMeetingRequest(_message.Message):
-    __slots__ = ('url', 'name')
+    __slots__ = ('meepo_id', 'bot_id', 'url', 'name')
+    MEEPO_ID_FIELD_NUMBER: _ClassVar[int]
+    BOT_ID_FIELD_NUMBER: _ClassVar[int]
     URL_FIELD_NUMBER: _ClassVar[int]
     NAME_FIELD_NUMBER: _ClassVar[int]
+    meepo_id: str
+    bot_id: str
     url: str
     name: str
 
-    def __init__(self, url: _Optional[str]=..., name: _Optional[str]=...) -> None:
+    def __init__(self, meepo_id: _Optional[str]=..., bot_id: _Optional[str]=..., url: _Optional[str]=..., name: _Optional[str]=...) -> None:
         ...
 
 class JoinMeetingResponse(_message.Message):
