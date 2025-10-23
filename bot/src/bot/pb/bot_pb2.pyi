@@ -44,11 +44,13 @@ class JoinMeetingResponse(_message.Message):
         ...
 
 class MeetingDetailsRequest(_message.Message):
-    __slots__ = ('bot_id',)
+    __slots__ = ('bot_id', 'meepo_id')
     BOT_ID_FIELD_NUMBER: _ClassVar[int]
+    MEEPO_ID_FIELD_NUMBER: _ClassVar[int]
     bot_id: str
+    meepo_id: str
 
-    def __init__(self, bot_id: _Optional[str]=...) -> None:
+    def __init__(self, bot_id: _Optional[str]=..., meepo_id: _Optional[str]=...) -> None:
         ...
 
 class MeetingDetailsResponse(_message.Message):
@@ -68,11 +70,13 @@ class Participant(_message.Message):
         ...
 
 class LeaveMeetingRequest(_message.Message):
-    __slots__ = ('bot_id',)
+    __slots__ = ('bot_id', 'meepo_id')
     BOT_ID_FIELD_NUMBER: _ClassVar[int]
+    MEEPO_ID_FIELD_NUMBER: _ClassVar[int]
     bot_id: str
+    meepo_id: str
 
-    def __init__(self, bot_id: _Optional[str]=...) -> None:
+    def __init__(self, bot_id: _Optional[str]=..., meepo_id: _Optional[str]=...) -> None:
         ...
 
 class LeaveMeetingResponse(_message.Message):
