@@ -50,11 +50,11 @@ jobs:
 
       - name: Install dependencies (meeting-bot)
         run: |
-          cd meeting-bot
+          cd bot
           ~/.cargo/bin/uv sync
 
       - name: Run meeting-bot tests
         run: |
-          cd meeting-bot
+          cd bot
           ~/.cargo/bin/uv run pytest -v -s
 
