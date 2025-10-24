@@ -3,19 +3,15 @@ name: Python CI Tests
 on:
   push:
     branches: ["main"]
-    paths:
-      - 'bot/**.py'
-      - '.github/workflows/py-test.yml'
   pull_request:
     branches: ["main"]
-    paths:
-      - 'bot/**.py'
 
 jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      bot: ${{ steps.filter.outputs.meeting_bot }}
+      bot: ${{ steps.filter.outputs.bot }}
+      python_workflow: ${{ steps.filter.outputs.python_workflow }}
 
     steps:
       - name: Checkout code
@@ -31,31 +27,29 @@ jobs:
             bot:
               - 'bot/**'
 
+            python_workflow:
+              - '.github/workflows/py-test.yml'
+
 
   test-bot:
     needs: changes
-    if: needs.changes.outputs.bot == 'true'
+    if: needs.changes.outputs.bot == 'true' || needs.changes.outputs.python_workflow == 'true'
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Set up Python 3.13
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-
       - name: Install uv and cache dependencies
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-
-      - name: Install dependencies (meeting-bot)
+      - name: Install dependencies (bot)
         run: uv sync
         working-directory: ./bot
-
       - name: Run bot tests
-        run: uv run pytest -v -s
+        run: uv run pytest -v -s tests
         working-directory: ./bot
 

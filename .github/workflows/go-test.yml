@@ -1,25 +1,17 @@
-name: CI Tests
+name: Go CI Tests
 
 on:
   push:
     branches: ["main"]
-
-    paths:
-      - 'gateway/**'
-      - '.github/workflows/go-test.yml'
-      
   pull_request:
     branches: ["main"]
-
-    paths:
-      - 'gateway/**'
-      - '.github/workflows/go-test.yml'
 
 jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
       gateway: ${{ steps.filter.outputs.gateway }}
+      go_workflow: ${{ steps.filter.outputs.go_workflow }}
 
     steps:
       - name: Checkout code
@@ -31,14 +23,17 @@ jobs:
         uses: dorny/paths-filter@v3
         id: filter
         with:
-
           filters: |
             gateway:
               - 'gateway/**'
 
+            go_workflow:
+              - '.github/workflows/go-test.yml'
+
   test-gateway:
     needs: changes
-    if: needs.changes.outputs.gateway == 'true'
+    if: needs.changes.outputs.gateway == 'true' || needs.changes.outputs.go_workflow == 'true'
+
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -52,4 +47,4 @@ jobs:
         run: |
           cd gateway
           go test -v ./...
-          
+
