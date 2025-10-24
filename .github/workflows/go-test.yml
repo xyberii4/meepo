@@ -6,15 +6,16 @@ on:
 
     paths:
       - 'gateway/**'
+      - '.github/workflows/go-test.yml'
       
   pull_request:
     branches: ["main"]
 
     paths:
       - 'gateway/**'
+      - '.github/workflows/go-test.yml'
 
 jobs:
-  # This job will now ONLY run if the 'paths' filter above passes
   changes:
     runs-on: ubuntu-latest
     outputs:
