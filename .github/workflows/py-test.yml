@@ -1,0 +1,60 @@
+name: Python CI Tests
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - 'bot/**'
+  pull_request:
+    branches: ["main"]
+    paths:
+      - 'bot/**'
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      bot: ${{ steps.filter.outputs.bot }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed Python service files
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            bot:
+              - 'bot/**'
+
+
+  test-bot:
+    needs: changes
+    if: needs.changes.outputs.bot == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install dependencies (meeting-bot)
+        run: |
+          cd meeting-bot
+          ~/.cargo/bin/uv sync
+
+      - name: Run meeting-bot tests
+        run: |
+          cd meeting-bot
+          ~/.cargo/bin/uv run pytest -v -s
+
