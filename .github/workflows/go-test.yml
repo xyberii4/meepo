@@ -3,10 +3,18 @@ name: CI Tests
 on:
   push:
     branches: ["main"]
+
+    paths:
+      - 'gateway/**'
+      
   pull_request:
     branches: ["main"]
 
+    paths:
+      - 'gateway/**'
+
 jobs:
+  # This job will now ONLY run if the 'paths' filter above passes
   changes:
     runs-on: ubuntu-latest
     outputs:
@@ -22,15 +30,14 @@ jobs:
         uses: dorny/paths-filter@v3
         id: filter
         with:
+
           filters: |
             gateway:
               - 'gateway/**'
-              
 
   test-gateway:
     needs: changes
     if: needs.changes.outputs.gateway == 'true'
-
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -38,8 +45,10 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24' 
+          go-version: '1.24'
           cache: true
       - name: Run gateway tests
-        run: go test -v ./gateway/...
-
+        run: |
+          cd gateway
+          go test -v ./...
+          
