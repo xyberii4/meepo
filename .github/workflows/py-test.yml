@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       bot: ${{ steps.filter.outputs.bot }}
+      transcriber: ${{ steps.filter.outputs.transcription }}
       python_workflow: ${{ steps.filter.outputs.python_workflow }}
 
     steps:
@@ -26,6 +27,9 @@ jobs:
           filters: |
             bot:
               - 'bot/**'
+
+            transcriber:
+              - 'transcription/**'
 
             python_workflow:
               - '.github/workflows/py-test.yml'
@@ -53,3 +57,24 @@ jobs:
         run: uv run pytest -v -s tests
         working-directory: ./bot
 
+  test-transcriber:
+    needs: changes
+    if: needs.changes.outputs.transcriber == 'true' || needs.changes.outputs.python_workflow == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install uv and cache dependencies
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install dependencies (transcriber)
+        run: uv sync
+        working-directory: ./transcription
+      - name: Run transcriber tests
+        run: uv run pytest -v -s tests
+        working-directory: ./transcription
