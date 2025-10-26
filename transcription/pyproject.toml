@@ -12,6 +12,7 @@ dependencies = [
   "pytest>=8.4.2",
   "pytest-asyncio>=1.2.0",
   "python-dotenv>=1.1.1",
+  "soundfile>=0.13.1",
 ]
 
 [tool.pytest.ini_options]
